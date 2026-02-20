@@ -237,13 +237,14 @@ function renderLog(){
     ul.insertBefore(li,ul.firstChild);
   });
 }
-// 変更後
 function logToday(){
   var p=parseInt(document.getElementById('today-pages').value);
   if(!p||p<1){alert('現在のページ数を入力してください');return;}
-  var pagesRead=p-currentPage(); // 現在ページ - 前回ページ = 今日読んだページ数
+  var pagesRead=p-currentPage();
   if(pagesRead<=0){alert('前回より大きいページ数を入力してください');return;}
   S.logs.push({day:dayNum(),pages:pagesRead,date:todayStr()});
+  document.getElementById('today-pages').value='';
+  save();updateUI();
 }
 function resetAll(){if(!confirm('記録をリセットしますか？'))return;localStorage.removeItem('bpv3');location.reload();}
 </script>
