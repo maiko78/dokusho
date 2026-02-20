@@ -1,254 +1,251 @@
-<!DOCTYPE html>  <html lang="ja">  
-<head>  
-<meta charset="UTF-8">  
-<meta name="viewport" content="width=device-width, initial-scale=1.0">  
-<title>ー読書ペーサー</title>  
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">  
-<style>  
-  :root {  
-    --ink: #1a1208;  
-    --paper: #f5efe3;  
-    --aged: #e8dcc8;  
-    --accent: #c0392b;  
-    --gold: #b8860b;  
-    --muted: #8a7560;  
-    --ahead: #2d7a4f;  
-    --behind: #c0392b;  
-  }  
-  * { margin: 0; padding: 0; box-sizing: border-box; }  
-  body {  
-    background: var(--paper);  
-    color: var(--ink);  
-    font-family: 'Noto Serif JP', serif;  
-    min-height: 100vh;  
-    background-image: repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(180,160,120,0.15) 27px,rgba(180,160,120,0.15) 28px);  
-    padding: 2rem 1rem 4rem;  
-  }  
-  .book-spine { position:fixed;left:0;top:0;bottom:0;width:8px;background:linear-gradient(to bottom,#8B0000,#c0392b,#8B0000);box-shadow:2px 0 8px rgba(0,0,0,0.3); }  
-  header { text-align:center;margin-bottom:3rem;padding-top:1rem; }  
-  header h1 { font-size:2.2rem;font-weight:300;letter-spacing:0.15em;text-shadow:1px 1px 0 rgba(184,134,11,0.3); }  
-  header p { font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--muted);letter-spacing:0.3em;margin-top:0.5rem;text-transform:uppercase; }  
-  .card { background:rgba(255,255,255,0.6);border:1px solid var(--aged);border-radius:2px;padding:2rem;margin-bottom:1.5rem;max-width:640px;margin-left:auto;margin-right:auto;box-shadow:3px 3px 0 rgba(184,134,11,0.15);position:relative; }  
-  .card::before { content:'';position:absolute;top:6px;left:6px;right:-6px;bottom:-6px;border:1px solid rgba(184,134,11,0.2);border-radius:2px;z-index:-1; }  
-  .card-title { font-family:'Space Mono',monospace;font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem;border-bottom:1px solid var(--aged);padding-bottom:0.75rem; }  
-  .form-row { display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem; }  
-  .form-group { display:flex;flex-direction:column;gap:0.5rem; }  
-  label { font-size:0.8rem;color:var(--muted); }  
-  input[type="number"],input[type="text"] { background:rgba(255,255,255,0.8);border:1px solid var(--aged);border-bottom:2px solid var(--gold);padding:0.6rem 0.8rem;font-family:'Space Mono',monospace;font-size:1.1rem;color:var(--ink);outline:none;transition:border-color 0.2s,background 0.2s;width:100%; }  
-  input:focus { border-bottom-color:var(--accent);background:#fff; }  
-  button { background:var(--ink);color:var(--paper);border:none;padding:0.9rem 2rem;font-family:'Space Mono',monospace;font-size:0.8rem;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.2s,transform 0.1s;display:block;width:100%;margin-top:0.5rem;font-weight:700; }  
-  button:hover { background:var(--accent); }  
-  button:active { transform:translate(2px,2px); }  
-  .btn-sm { background:transparent;color:var(--ink);border:1px solid var(--aged);font-size:0.7rem;padding:0.6rem 1rem;width:auto;margin-top:0; }  
-  .btn-sm:hover { background:var(--aged);color:var(--ink); }  
-  #results { display:none; }  
-  .stat-grid { display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem; }  
-  .stat-box { text-align:center;padding:1rem 0.5rem;border:1px solid var(--aged);background:rgba(255,255,255,0.5); }  
-  .stat-num { font-family:'Space Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--gold);line-height:1;margin-bottom:0.4rem; }  
-  .stat-label { font-size:0.62rem;color:var(--muted); }  
-  .prog-label { display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.5rem; }  
-  .prog-label span:first-child { font-size:0.75rem;color:var(--muted); }  
-  .prog-label span:last-child { font-family:'Space Mono',monospace;font-size:0.85rem; }  
-  .prog-track { height:28px;background:var(--aged);position:relative;overflow:hidden;border:1px solid rgba(0,0,0,0.1); }  
-  .prog-bar { height:100%;position:absolute;top:0;left:0;transition:width 0.8s cubic-bezier(0.16,1,0.3,1); }  
-  .prog-bar.target { background:rgba(184,134,11,0.25);border-right:2px dashed var(--gold); }  
-  .prog-bar.actual { background:repeating-linear-gradient(45deg,var(--ink),var(--ink) 4px,rgba(26,18,8,0.55) 4px,rgba(26,18,8,0.55) 8px); }  
-  .status-badge { display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 1rem;font-family:'Space Mono',monospace;font-size:0.75rem;letter-spacing:0.08em;margin-bottom:1.5rem; }  
-  .status-badge.ahead { background:rgba(45,122,79,0.1);color:var(--ahead);border:1px solid rgba(45,122,79,0.3); }  
-  .status-badge.behind { background:rgba(192,57,43,0.1);color:var(--behind);border:1px solid rgba(192,57,43,0.3); }  
-  .status-badge.on-track { background:rgba(184,134,11,0.1);color:var(--gold);border:1px solid rgba(184,134,11,0.3); }  
-  hr.sep { border:none;border-top:1px solid var(--aged);margin:1.5rem 0; }  
-  .forecast-bar { display:flex;height:64px;gap:3px;align-items:flex-end; }  
-  .f-day { flex:1;display:flex;flex-direction:column;align-items:center;gap:3px; }  
-  .f-bar { width:100%;min-height:4px;border-radius:1px 1px 0 0;transition:height 0.5s; }  
-  .f-bar.done { background:repeating-linear-gradient(45deg,var(--ink),var(--ink) 3px,rgba(26,18,8,0.5) 3px,rgba(26,18,8,0.5) 6px); }  
-  .f-bar.today { background:var(--accent); }  
-  .f-bar.future { background:rgba(184,134,11,0.35); }  
-  .f-lbl { font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--muted); }  
-  .log-list { list-style:none;max-height:220px;overflow-y:auto;font-family:'Space Mono',monospace;font-size:0.75rem; }  
-  .log-list li { display:grid;grid-template-columns:3.5rem 1fr 3rem 3.5rem;gap:0.75rem;align-items:center;padding:0.6rem 0;border-bottom:1px solid rgba(180,160,120,0.2);color:var(--muted); }  
-  .ld { color:var(--ink);font-weight:700; }  
-  .lp { color:var(--gold);text-align:right; }  
-  .ldiff { font-size:0.7rem;text-align:right; }  
-  .ldiff.pos { color:var(--ahead); }  
-  .ldiff.neg { color:var(--behind); }  
-  @media(max-width:480px) { .form-row{grid-template-columns:1fr;} .stat-grid{grid-template-columns:1fr 1fr;} header h1{font-size:1.6rem;} }  
-</style>  
-</head>  
-<body>  
-<div class="book-spine"></div>  
-<header>  
-  <h1>積読解消</h1>  
-  <p>Reading Pacer — 読書ペーサー</p>  
-</header>  <div class="card" id="setup-card">  
-  <div class="card-title">📖 本の情報を入力</div>  
-  <div class="form-group" style="margin-bottom:1.5rem">  
-    <label>本のタイトル（任意）</label>  
-    <input type="text" id="book-title" placeholder="例：坊っちゃん">  
-  </div>  
-  <div class="form-row">  
-    <div class="form-group">  
-      <label>総ページ数</label>  
-      <input type="number" id="total-pages" placeholder="350" min="1">  
-    </div>  
-    <div class="form-group">  
-      <label>何日で読み終える？</label>  
-      <input type="number" id="target-days" placeholder="14" min="1">  
-    </div>  
-  </div>  
-  <div class="form-row">  
-    <div class="form-group">  
-      <label>現在のページ</label>
-      <input type="number" id="start-page" placeholder="120" min="1"> 
-    </div>  
-    <div class="form-group">  
-      <label>開始日</label>  
-      <input type="text" id="start-date-disp" readonly style="font-size:0.85rem;color:var(--muted)">  
-    </div>  
-  </div>  
-  <button onclick="setup()">ペースを計算する →</button>  
-</div>  <div id="results">  
-  <div class="card">  
-    <div class="card-title" id="result-title">📊 読書プラン</div>  
-    <div class="stat-grid">  
-      <div class="stat-box"><div class="stat-num" id="s-daily">—</div><div class="stat-label">1日のノルマ（p）</div></div>  
-      <div class="stat-box"><div class="stat-num" id="s-days">—</div><div class="stat-label">残り日数</div></div>  
-      <div class="stat-box"><div class="stat-num" id="s-pages">—</div><div class="stat-label">残りページ</div></div>  
-    </div>  
-    <div style="margin-bottom:1.5rem">  
-      <div class="prog-label"><span>進捗</span><span id="prog-text">— / — ページ</span></div>  
-      <div class="prog-track">  
-        <div class="prog-bar target" id="target-bar" style="width:0%"></div>  
-        <div class="prog-bar actual" id="actual-bar" style="width:0%"></div>  
-      </div>  
-      <div style="display:flex;justify-content:space-between;margin-top:0.4rem">  
-        <span style="font-size:0.62rem;color:var(--muted)">▨ 実際の進捗</span>  
-        <span style="font-size:0.62rem;color:var(--gold)">-- 目標ライン</span>  
-      </div>  
-    </div>  
-    <div id="status-wrap"></div>  
-    <hr class="sep">  
-    <div class="card-title" style="margin-bottom:0.75rem">📅 日別進捗グラフ</div>  
-    <div class="forecast-bar" id="forecast-bar"></div>  
-    <div style="display:flex;gap:1rem;margin-top:0.5rem;flex-wrap:wrap">  
-      <span style="font-size:0.6rem;color:var(--muted)">▨ 読了済み</span>  
-      <span style="font-size:0.6rem;color:var(--accent)">■ 今日</span>  
-      <span style="font-size:0.6rem;color:rgba(184,134,11,0.7)">■ 予定</span>  
-    </div>  
-  </div>    <div class="card">  
-    <div class="card-title">✏️ 今日の読書を記録</div>  
-    <div class="form-row" style="align-items:flex-end">  
-      <div class="form-group">  
-        <label>今日読んだページ数</label>  
-        <input type="number" id="today-pages" placeholder="30" min="0">  
-      </div>  
-      <div class="form-group">  
-        <button onclick="logToday()">記録する</button>  
-      </div>  
-    </div>  
-  </div>    <div class="card" id="log-card" style="display:none">  
-    <div class="card-title">📝 読書ログ</div>  
-    <ul class="log-list" id="log-list"></ul>  
-  </div>    <div style="text-align:right;max-width:640px;margin:0 auto">  
-    <button class="btn-sm" onclick="resetAll()">最初からやり直す</button>  
-  </div>  
-</div>  <script>  
-var S=null;  
-function todayStr(){return new Date().toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'});}  
-function todayISO(){return new Date().toISOString().split('T')[0];}  
-function dayNum(){if(!S)return 1;var d=new Date(todayISO())-new Date(S.startDate);return Math.max(1,Math.floor(d/86400000)+1);}  
-window.onload=function(){  
-  document.getElementById('start-date-disp').value=new Date().toLocaleDateString('ja-JP');  
-  var raw=localStorage.getItem('bpv3');  
-  if(raw){S=JSON.parse(raw);showR();updateUI();}  
-};  
-function save(){localStorage.setItem('bpv3',JSON.stringify(S));}  
-function setup(){  
-  var total=parseInt(document.getElementById('total-pages').value);  
-  var days=parseInt(document.getElementById('target-days').value);  
-  var start=parseInt(document.getElementById('start-page').value)||1;  
-  if(!total||!days){alert('ページ数と日数を入力してください');return;}  
-  var remain=total-start+1;  
-  S={title:document.getElementById('book-title').value||'読書中の本',totalPages:total,startPage:start,targetDays:days,startDate:todayISO(),basePPD:Math.ceil(remain/days),logs:[]};  
-  save();showR();updateUI();  
-}  
-function showR(){document.getElementById('setup-card').style.display='none';document.getElementById('results').style.display='block';}  
-function readPages(){return S.logs.reduce(function(a,l){return a+l.pages;},0);}  
-function currentPage(){return S.startPage-1+readPages();}  
-function updateUI(){  
-  var d=dayNum(),read=currentPage(),remain=S.totalPages-read,daysLeft=Math.max(0,S.targetDays-d+1);  
-  var newPPD=daysLeft>0?Math.ceil(remain/daysLeft):(remain>0?remain:0);  
-  document.getElementById('result-title').textContent='📊 '+S.title;  
-  document.getElementById('s-daily').textContent=remain<=0?'完読!':newPPD;  
-  document.getElementById('s-days').textContent=daysLeft;  
-  document.getElementById('s-pages').textContent=Math.max(0,remain);  
-  document.getElementById('prog-text').textContent=read+' / '+S.totalPages+' ページ';  
-  var aP=Math.min(100,(read/S.totalPages)*100);  
-  var tRead=Math.min(S.totalPages,(S.startPage-1)+S.basePPD*d);  
-  var tP=Math.min(100,(tRead/S.totalPages)*100);  
-  document.getElementById('actual-bar').style.width=aP+'%';  
-  document.getElementById('target-bar').style.width=tP+'%';  
-  var diff=read-tRead,cls,msg;  
-  if(remain<=0){cls='ahead';msg='🎉 読了おめでとうございます！';}  
-  else if(Math.abs(diff)<=S.basePPD*0.25){cls='on-track';msg='◈ 順調なペースです';}  
-  else if(diff>0){cls='ahead';msg='▲ '+Math.abs(Math.round(diff))+'ページ 先行中！';}  
-  else{cls='behind';msg='▼ '+Math.abs(Math.round(diff))+'ページ 遅れています';}  
-  document.getElementById('status-wrap').innerHTML='<div class="status-badge '+cls+'">'+msg+'</div>';  
-  renderForecast(d);renderLog();  
-}  
-function renderForecast(d){  
-  var bar=document.getElementById('forecast-bar');bar.innerHTML='';  
-  var maxH=54,total=S.totalPages,off=S.startPage-1;  
-  var from=Math.max(1,d-3),to=Math.min(d+6,S.targetDays+2);  
-  for(var i=from;i<=to;i++){  
-    var proj=Math.min(total,off+S.basePPD*i);  
-    var h=Math.max(4,(proj/total)*maxH);  
-    var wrap=document.createElement('div');wrap.className='f-day';  
-    var b=document.createElement('div');b.className='f-bar';b.style.height=h+'px';  
-    if(i<d)b.classList.add('done');else if(i===d)b.classList.add('today');else b.classList.add('future');  
-    var lbl=document.createElement('div');lbl.className='f-lbl';lbl.textContent=i+'日';  
-    wrap.appendChild(b);wrap.appendChild(lbl);bar.appendChild(wrap);  
-  }  
-}  
-function renderLog(){  
-  if(!S.logs.length){document.getElementById('log-card').style.display='none';return;}  
-  document.getElementById('log-card').style.display='block';  
-  var ul=document.getElementById('log-list');ul.innerHTML='';  
-  var cumul=S.startPage-1;  
-  S.logs.forEach(function(log){  
-    cumul+=log.pages;  
-    var tp=Math.min(S.totalPages,(S.startPage-1)+S.basePPD*log.day);  
-    var diff=cumul-tp;  
-    var li=document.createElement('li');  
-    li.innerHTML='<span class="ld">'+log.day+'日目</span><span style="color:var(--muted);font-size:0.7rem">'+log.date+'</span><span class="lp">+'+log.pages+'p</span><span class="ldiff '+(diff>=0?'pos':'neg')+'">'+(diff>=0?'+':'')+Math.round(diff)+'p</span>';  
-    ul.insertBefore(li,ul.firstChild);  
-  });  
-}  
-function logToday(){
-  var current = parseInt(document.getElementById('today-pages').value);
-  if(!current || current < S.startPage){
-    alert('正しい現在ページを入力してください');
-    return;
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>積読解消 — 読書ペーサー</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1208;
+    --paper: #f5efe3;
+    --aged: #e8dcc8;
+    --accent: #c0392b;
+    --gold: #b8860b;
+    --muted: #8a7560;
+    --ahead: #2d7a4f;
+    --behind: #c0392b;
   }
-
-  var prevRead = currentPage(); // 今まで読んだ最終ページ
-  var pagesReadToday = current - prevRead;
-
-  if(pagesReadToday < 0){
-    alert('前回より少ないページになっています');
-    return;
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Serif JP', serif;
+    min-height: 100vh;
+    background-image: repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(180,160,120,0.15) 27px,rgba(180,160,120,0.15) 28px);
+    padding: 2rem 1rem 4rem;
   }
+  .book-spine { position:fixed;left:0;top:0;bottom:0;width:8px;background:linear-gradient(to bottom,#8B0000,#c0392b,#8B0000);box-shadow:2px 0 8px rgba(0,0,0,0.3); }
+  header { text-align:center;margin-bottom:3rem;padding-top:1rem; }
+  header h1 { font-size:2.2rem;font-weight:300;letter-spacing:0.15em;text-shadow:1px 1px 0 rgba(184,134,11,0.3); }
+  header p { font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--muted);letter-spacing:0.3em;margin-top:0.5rem;text-transform:uppercase; }
+  .card { background:rgba(255,255,255,0.6);border:1px solid var(--aged);border-radius:2px;padding:2rem;margin-bottom:1.5rem;max-width:640px;margin-left:auto;margin-right:auto;box-shadow:3px 3px 0 rgba(184,134,11,0.15);position:relative; }
+  .card::before { content:'';position:absolute;top:6px;left:6px;right:-6px;bottom:-6px;border:1px solid rgba(184,134,11,0.2);border-radius:2px;z-index:-1; }
+  .card-title { font-family:'Space Mono',monospace;font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:1.5rem;border-bottom:1px solid var(--aged);padding-bottom:0.75rem; }
+  .form-row { display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem; }
+  .form-group { display:flex;flex-direction:column;gap:0.5rem; }
+  label { font-size:0.8rem;color:var(--muted); }
+  input[type="number"],input[type="text"] { background:rgba(255,255,255,0.8);border:1px solid var(--aged);border-bottom:2px solid var(--gold);padding:0.6rem 0.8rem;font-family:'Space Mono',monospace;font-size:1.1rem;color:var(--ink);outline:none;transition:border-color 0.2s,background 0.2s;width:100%; }
+  input:focus { border-bottom-color:var(--accent);background:#fff; }
+  button { background:var(--ink);color:var(--paper);border:none;padding:0.9rem 2rem;font-family:'Space Mono',monospace;font-size:0.8rem;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.2s,transform 0.1s;display:block;width:100%;margin-top:0.5rem;font-weight:700; }
+  button:hover { background:var(--accent); }
+  button:active { transform:translate(2px,2px); }
+  .btn-sm { background:transparent;color:var(--ink);border:1px solid var(--aged);font-size:0.7rem;padding:0.6rem 1rem;width:auto;margin-top:0; }
+  .btn-sm:hover { background:var(--aged);color:var(--ink); }
+  #results { display:none; }
+  .stat-grid { display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem; }
+  .stat-box { text-align:center;padding:1rem 0.5rem;border:1px solid var(--aged);background:rgba(255,255,255,0.5); }
+  .stat-num { font-family:'Space Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--gold);line-height:1;margin-bottom:0.4rem; }
+  .stat-label { font-size:0.62rem;color:var(--muted); }
+  .prog-label { display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.5rem; }
+  .prog-label span:first-child { font-size:0.75rem;color:var(--muted); }
+  .prog-label span:last-child { font-family:'Space Mono',monospace;font-size:0.85rem; }
+  .prog-track { height:28px;background:var(--aged);position:relative;overflow:hidden;border:1px solid rgba(0,0,0,0.1); }
+  .prog-bar { height:100%;position:absolute;top:0;left:0;transition:width 0.8s cubic-bezier(0.16,1,0.3,1); }
+  .prog-bar.target { background:rgba(184,134,11,0.25);border-right:2px dashed var(--gold); }
+  .prog-bar.actual { background:repeating-linear-gradient(45deg,var(--ink),var(--ink) 4px,rgba(26,18,8,0.55) 4px,rgba(26,18,8,0.55) 8px); }
+  .status-badge { display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 1rem;font-family:'Space Mono',monospace;font-size:0.75rem;letter-spacing:0.08em;margin-bottom:1.5rem; }
+  .status-badge.ahead { background:rgba(45,122,79,0.1);color:var(--ahead);border:1px solid rgba(45,122,79,0.3); }
+  .status-badge.behind { background:rgba(192,57,43,0.1);color:var(--behind);border:1px solid rgba(192,57,43,0.3); }
+  .status-badge.on-track { background:rgba(184,134,11,0.1);color:var(--gold);border:1px solid rgba(184,134,11,0.3); }
+  hr.sep { border:none;border-top:1px solid var(--aged);margin:1.5rem 0; }
+  .forecast-bar { display:flex;height:64px;gap:3px;align-items:flex-end; }
+  .f-day { flex:1;display:flex;flex-direction:column;align-items:center;gap:3px; }
+  .f-bar { width:100%;min-height:4px;border-radius:1px 1px 0 0;transition:height 0.5s; }
+  .f-bar.done { background:repeating-linear-gradient(45deg,var(--ink),var(--ink) 3px,rgba(26,18,8,0.5) 3px,rgba(26,18,8,0.5) 6px); }
+  .f-bar.today { background:var(--accent); }
+  .f-bar.future { background:rgba(184,134,11,0.35); }
+  .f-lbl { font-family:'Space Mono',monospace;font-size:0.5rem;color:var(--muted); }
+  .log-list { list-style:none;max-height:220px;overflow-y:auto;font-family:'Space Mono',monospace;font-size:0.75rem; }
+  .log-list li { display:grid;grid-template-columns:3.5rem 1fr 3rem 3.5rem;gap:0.75rem;align-items:center;padding:0.6rem 0;border-bottom:1px solid rgba(180,160,120,0.2);color:var(--muted); }
+  .ld { color:var(--ink);font-weight:700; }
+  .lp { color:var(--gold);text-align:right; }
+  .ldiff { font-size:0.7rem;text-align:right; }
+  .ldiff.pos { color:var(--ahead); }
+  .ldiff.neg { color:var(--behind); }
+  @media(max-width:480px) { .form-row{grid-template-columns:1fr;} .stat-grid{grid-template-columns:1fr 1fr;} header h1{font-size:1.6rem;} }
+</style>
+</head>
+<body>
+<div class="book-spine"></div>
+<header>
+  <h1>積読解消</h1>
+  <p>Reading Pacer — 読書ペーサー</p>
+</header>
 
-  S.logs.push({
-    day: dayNum(),
-    pages: pagesReadToday,
-    date: todayStr()
-  });
+<div class="card" id="setup-card">
+  <div class="card-title">📖 本の情報を入力</div>
+  <div class="form-group" style="margin-bottom:1.5rem">
+    <label>本のタイトル（任意）</label>
+    <input type="text" id="book-title" placeholder="例：坊っちゃん">
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>総ページ数</label>
+      <input type="number" id="total-pages" placeholder="350" min="1">
+    </div>
+    <div class="form-group">
+      <label>何日で読み終える？</label>
+      <input type="number" id="target-days" placeholder="14" min="1">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>現在のページ（読み始めページ）</label>
+      <input type="number" id="start-page" placeholder="1" min="1">
+    </div>
+    <div class="form-group">
+      <label>開始日</label>
+      <input type="text" id="start-date-disp" readonly style="font-size:0.85rem;color:var(--muted)">
+    </div>
+  </div>
+  <button onclick="setup()">ペースを計算する →</button>
+</div>
 
-  document.getElementById('today-pages').value='';
-  save();
-  updateUI();
+<div id="results">
+  <div class="card">
+    <div class="card-title" id="result-title">📊 読書プラン</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num" id="s-daily">—</div><div class="stat-label">1日のノルマ（p）</div></div>
+      <div class="stat-box"><div class="stat-num" id="s-days">—</div><div class="stat-label">残り日数</div></div>
+      <div class="stat-box"><div class="stat-num" id="s-pages">—</div><div class="stat-label">残りページ</div></div>
+    </div>
+    <div style="margin-bottom:1.5rem">
+      <div class="prog-label"><span>進捗</span><span id="prog-text">— / — ページ</span></div>
+      <div class="prog-track">
+        <div class="prog-bar target" id="target-bar" style="width:0%"></div>
+        <div class="prog-bar actual" id="actual-bar" style="width:0%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:0.4rem">
+        <span style="font-size:0.62rem;color:var(--muted)">▨ 実際の進捗</span>
+        <span style="font-size:0.62rem;color:var(--gold)">-- 目標ライン</span>
+      </div>
+    </div>
+    <div id="status-wrap"></div>
+    <hr class="sep">
+    <div class="card-title" style="margin-bottom:0.75rem">📅 日別進捗グラフ</div>
+    <div class="forecast-bar" id="forecast-bar"></div>
+    <div style="display:flex;gap:1rem;margin-top:0.5rem;flex-wrap:wrap">
+      <span style="font-size:0.6rem;color:var(--muted)">▨ 読了済み</span>
+      <span style="font-size:0.6rem;color:var(--accent)">■ 今日</span>
+      <span style="font-size:0.6rem;color:rgba(184,134,11,0.7)">■ 予定</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">✏️ 今日の読書を記録</div>
+    <div class="form-row" style="align-items:flex-end">
+      <div class="form-group">
+        <label>今のページ数</label>
+        <input type="number" id="today-pages" placeholder="30" min="0">
+      </div>
+      <div class="form-group">
+        <button onclick="logToday()">記録する</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="log-card" style="display:none">
+    <div class="card-title">📝 読書ログ</div>
+    <ul class="log-list" id="log-list"></ul>
+  </div>
+
+  <div style="text-align:right;max-width:640px;margin:0 auto">
+    <button class="btn-sm" onclick="resetAll()">最初からやり直す</button>
+  </div>
+</div>
+
+<script>
+var S=null;
+function todayStr(){return new Date().toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'});}
+function todayISO(){return new Date().toISOString().split('T')[0];}
+function dayNum(){if(!S)return 1;var d=new Date(todayISO())-new Date(S.startDate);return Math.max(1,Math.floor(d/86400000)+1);}
+window.onload=function(){
+  document.getElementById('start-date-disp').value=new Date().toLocaleDateString('ja-JP');
+  var raw=localStorage.getItem('bpv3');
+  if(raw){S=JSON.parse(raw);showR();updateUI();}
+};
+function save(){localStorage.setItem('bpv3',JSON.stringify(S));}
+function setup(){
+  var total=parseInt(document.getElementById('total-pages').value);
+  var days=parseInt(document.getElementById('target-days').value);
+  var start=parseInt(document.getElementById('start-page').value)||1;
+  if(!total||!days){alert('ページ数と日数を入力してください');return;}
+  var remain=total-start+1;
+  S={title:document.getElementById('book-title').value||'読書中の本',totalPages:total,startPage:start,targetDays:days,startDate:todayISO(),basePPD:Math.ceil(remain/days),logs:[]};
+  save();showR();updateUI();
 }
-function resetAll(){if(!confirm('記録をリセットしますか？'))return;localStorage.removeItem('bpv3');location.reload();}  
-</script>  </body>  
+function showR(){document.getElementById('setup-card').style.display='none';document.getElementById('results').style.display='block';}
+function readPages(){return S.logs.reduce(function(a,l){return a+l.pages;},0);}
+function currentPage(){return S.startPage-1+readPages();}
+function updateUI(){
+  var d=dayNum(),read=currentPage(),remain=S.totalPages-read,daysLeft=Math.max(0,S.targetDays-d+1);
+  var newPPD=daysLeft>0?Math.ceil(remain/daysLeft):(remain>0?remain:0);
+  document.getElementById('result-title').textContent='📊 '+S.title;
+  document.getElementById('s-daily').textContent=remain<=0?'完読!':newPPD;
+  document.getElementById('s-days').textContent=daysLeft;
+  document.getElementById('s-pages').textContent=Math.max(0,remain);
+  document.getElementById('prog-text').textContent=read+' / '+S.totalPages+' ページ';
+  var aP=Math.min(100,(read/S.totalPages)*100);
+  var tRead=Math.min(S.totalPages,(S.startPage-1)+S.basePPD*d);
+  var tP=Math.min(100,(tRead/S.totalPages)*100);
+  document.getElementById('actual-bar').style.width=aP+'%';
+  document.getElementById('target-bar').style.width=tP+'%';
+  var diff=read-tRead,cls,msg;
+  if(remain<=0){cls='ahead';msg='🎉 読了おめでとうございます！';}
+  else if(Math.abs(diff)<=S.basePPD*0.25){cls='on-track';msg='◈ 順調なペースです';}
+  else if(diff>0){cls='ahead';msg='▲ '+Math.abs(Math.round(diff))+'ページ 先行中！';}
+  else{cls='behind';msg='▼ '+Math.abs(Math.round(diff))+'ページ 遅れています';}
+  document.getElementById('status-wrap').innerHTML='<div class="status-badge '+cls+'">'+msg+'</div>';
+  renderForecast(d);renderLog();
+}
+function renderForecast(d){
+  var bar=document.getElementById('forecast-bar');bar.innerHTML='';
+  var maxH=54,total=S.totalPages,off=S.startPage-1;
+  var from=Math.max(1,d-3),to=Math.min(d+6,S.targetDays+2);
+  for(var i=from;i<=to;i++){
+    var proj=Math.min(total,off+S.basePPD*i);
+    var h=Math.max(4,(proj/total)*maxH);
+    var wrap=document.createElement('div');wrap.className='f-day';
+    var b=document.createElement('div');b.className='f-bar';b.style.height=h+'px';
+    if(i<d)b.classList.add('done');else if(i===d)b.classList.add('today');else b.classList.add('future');
+    var lbl=document.createElement('div');lbl.className='f-lbl';lbl.textContent=i+'日';
+    wrap.appendChild(b);wrap.appendChild(lbl);bar.appendChild(wrap);
+  }
+}
+function renderLog(){
+  if(!S.logs.length){document.getElementById('log-card').style.display='none';return;}
+  document.getElementById('log-card').style.display='block';
+  var ul=document.getElementById('log-list');ul.innerHTML='';
+  var cumul=S.startPage-1;
+  S.logs.forEach(function(log){
+    cumul+=log.pages;
+    var tp=Math.min(S.totalPages,(S.startPage-1)+S.basePPD*log.day);
+    var diff=cumul-tp;
+    var li=document.createElement('li');
+    li.innerHTML='<span class="ld">'+log.day+'日目</span><span style="color:var(--muted);font-size:0.7rem">'+log.date+'</span><span class="lp">+'+log.pages+'p</span><span class="ldiff '+(diff>=0?'pos':'neg')+'">'+(diff>=0?'+':'')+Math.round(diff)+'p</span>';
+    ul.insertBefore(li,ul.firstChild);
+  });
+}
+// 変更後
+function logToday(){
+  var p=parseInt(document.getElementById('today-pages').value);
+  if(!p||p<1){alert('現在のページ数を入力してください');return;}
+  var pagesRead=p-currentPage(); // 現在ページ - 前回ページ = 今日読んだページ数
+  if(pagesRead<=0){alert('前回より大きいページ数を入力してください');return;}
+  S.logs.push({day:dayNum(),pages:pagesRead,date:todayStr()});
+}
+function resetAll(){if(!confirm('記録をリセットしますか？'))return;localStorage.removeItem('bpv3');location.reload();}
+</script>
+</body>
 </html>
